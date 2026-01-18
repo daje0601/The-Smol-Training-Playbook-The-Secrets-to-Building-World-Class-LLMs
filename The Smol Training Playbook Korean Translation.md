@@ -1,14 +1,42 @@
 ---
+script:
+  - content: |
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true,
+          processEnvironments: true
+        },
+        svg: {
+          fontCache: 'global'
+        },
+        startup: {
+          pageReady: function() {
+            return MathJax.startup.defaultPageReady().then(function() {
+              console.log('MathJax rendering complete');
+            });
+          }
+        }
+      };
+  - url: https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 css: |-
-  body { font-size: 16px !important; line-height: 1.8 !important; }
-  h1:first-of-type { text-align: center; line-height: 1.8; font-size: 38px; }
-  table { font-size: 12px; }
-  em:first-of-type { display: block; text-align: center; }
+  body { font-size: 18px !important; line-height: 1.8 !important; }
+  code, pre { font-size: 14px !important; }
+  h1:first-of-type, h1:nth-of-type(2) { text-align: center; line-height: 1.8; font-size: 38px; }
+  h1:nth-of-type(2) { margin-bottom: 40px; }
+  img:first-of-type { margin-top: 20px; margin-bottom: 50px; }
+  table:first-of-type { font-size: 14px; margin-bottom: 40px; }
+  table:first-of-type td, table:first-of-type th { font-size: 14px; line-height: 1.6; }
+  em:first-of-type { display: block; text-align: center; margin-bottom: 30px; }
   td:nth-child(2) { text-align: center; }
   td:nth-child(3) { text-align: right; }
+  table:not(:first-of-type) { font-size: 10px !important; width: 100% !important; table-layout: fixed; word-wrap: break-word; }
+  table:not(:first-of-type) td, table:not(:first-of-type) th { font-size: 10px !important; line-height: 1.4 !important; padding: 4px !important; }
 ---
 
-# The Smol Training Playbook: The Secrets to Building World-Class LLMs
+# The Smol Training Playbook: 
+# The Secrets to Building World-Class LLMs
 
 ![Training Run Types Chart](image.png)
 
@@ -19,7 +47,7 @@ css: |-
 
 | AUTHORS | AFFILIATION | PUBLISHED |
 |---------|-------------|-----------|
-| Loubna Ben Allal, Lewis Tunstall, Nouamane Tazi, Elie Bakouch, Ed Beeching, Carlos Miguel Patiño, Clémentine Fourrier, Thibaud Frere, Anton Lozhkov, Colin Raffel, Leandro von Werra, Thomas Wolf | [Hugging Face](https://huggingface.co) | Oct. 30, 2025 |
+| Loubna Ben Allal, Lewis Tunstall, Nouamane Tazi, Elie Bakouch,<br>Ed Beeching, Carlos Miguel Patiño, Clémentine Fourrier, Thibaud Frere,<br>Anton Lozhkov, Colin Raffel, Leandro von Werra, Thomas Wolf | [Hugging Face](https://huggingface.co) | Oct. 30, 2025 |
 
 
 **Translated by Dasol Kang** 
@@ -926,12 +954,9 @@ dot_product(RoPE(x, m), RoPE(y, n)) = Σₖ [xₖ * yₖ * cos((m-n) * θₖ)]
 > $$s_{t,i}^{(h)} = \frac{1}{\sqrt{d_k}} (q_t^{(h)})^\top k_i^{(h)} =
 > \frac{1}{\sqrt{d_k}} (x_t U^{(h)})^\top c_i$$
 > 
-> 따라서 작은 캐시 $c_i$에 대해 $\tilde{q}_t^{(h)} = x_t U^{(h)} \in
-> \mathbb{R}^{d_c}$로 계산합니다(헤드별 k가 저장되지 않음). RoPE는 두 맵 사이에 쌍 의존적 회전을 삽입하기
-> 때문에 이를 깨뜨립니다. 전체 차원 RoPE에서,
+> 따라서 작은 캐시 $c_i$에 대해 $\widetilde{q}_t^{(h)} = x_t U^{(h)} \in \mathbb{R}^{d_c}$로 계산합니다(헤드별 k가 저장되지 않음). RoPE는 두 맵 사이에 쌍 의존적 회전을 삽입하기 때문에 이를 깨뜨립니다. 전체 차원 RoPE에서,
 > 
-> $$s_{t,i}^{(h)} = \frac{1}{\sqrt{d_k}} (x_t W_q^{(h)})^\top
-> \underbrace{R_{t-i}}_{\text{depends on } t-i} (c_i E^{(h)})$$
+> $$s_{t,i}^{(h)} = \frac{1}{\sqrt{d_k}} (x_t W_q^{(h)})^\top \underbrace{R_{t-i}}\_{\text{depends on } t-i} (c_i E^{(h)})$$
 > 
 > 따라서 $W_q^{(h)}$와 $E^{(h)}$를 고정된 $U^{(h)}$로 미리 병합할 수 없습니다. 해결책: partial
 > RoPE. 헤드 차원을 $d_k = d_{nope} + d_{rope}$로 분할하고, 큰 블록에는 회전을 적용하지
@@ -945,11 +970,11 @@ dot_product(RoPE(x, m), RoPE(y, n)) = Σₖ [xₖ * yₖ * cos((m-n) * θₖ)]
 
 ![](https://static.wikidocs.net/images/page/318788/image_202601082148_XuMIJ0z.png)
   
-  **청크 어텐션(Chunked Attention)**은 시퀀스를 고정 크기 청크로 나누며, 토큰은 자신의 청크 내에서만 어텐션을 줄 수 있습니다. 우리 예시에서 16개 토큰은 두 개의 8 토큰 청크(0~7과 8~15)로 분할되며, 각 토큰은 자신의 청크 내의 다른 토큰만 볼 수 있습니다. 토큰 8~15가 이전 청크에 전혀 어텐션을 줄 수 없다는 점에 주목하세요. 이는 청크 경계에서 재설정되는 격리된 어텐션 윈도우를 생성합니다. Llama 4([Meta AI, 2025](https://ai.meta.com/blog/llama-4-multimodal-intelligence/))는 RoPE 레이어(4개 디코더 레이어 중 3개)에서 8192 토큰 청크를 가진 청크 어텐션을 사용하고, NoPE 레이어는 전체 컨텍스트 접근을 유지합니다. 이는 레이어당 KV 캐시 크기를 제한하여 메모리 요구 사항을 줄이지만, 토큰이 이전 청크에 어텐션을 줄 수 없어 일부 긴 컨텍스트 태스크에 영향을 미칠 수 있습니다.
+  **청크 어텐션(Chunked Attention)**은 시퀀스를 고정 크기 청크로 나누며, 토큰은 자신의 청크 내에서만 어텐션을 줄 수 있습니다. 우리 예시에서 16개 토큰은 두 개의 8 토큰 청크(0-7과 8-15)로 분할되며, 각 토큰은 자신의 청크 내의 다른 토큰만 볼 수 있습니다. 토큰 8-15가 이전 청크에 전혀 어텐션을 줄 수 없다는 점에 주목하세요. 이는 청크 경계에서 재설정되는 격리된 어텐션 윈도우를 생성합니다. Llama 4([Meta AI, 2025](https://ai.meta.com/blog/llama-4-multimodal-intelligence/))는 RoPE 레이어(4개 디코더 레이어 중 3개)에서 8192 토큰 청크를 가진 청크 어텐션을 사용하고, NoPE 레이어는 전체 컨텍스트 접근을 유지합니다. 이는 레이어당 KV 캐시 크기를 제한하여 메모리 요구 사항을 줄이지만, 토큰이 이전 청크에 어텐션을 줄 수 없어 일부 긴 컨텍스트 태스크에 영향을 미칠 수 있습니다.
 
-슬라이딩 윈도우 어텐션(SWA, Sliding Window Attention)은 Mistral 7B([Child et al., 2019](https://huggingfacetb-smol-training-playbook.hf.space/#bib-child2019generating); [Jiang et al., 2023](https://arxiv.org/abs/2310.06825))에 의해 대중화되었으며, 최근 토큰이 가장 관련성이 높다는 직관을 기반으로 다른 접근 방식을 취합니다. 딱딱한 청크 경계 대신, 각 토큰은 가장 최근 N개 토큰에만 어텐션을 줍니다. 다이어그램에서 모든 토큰은 최대 8개 위치 뒤까지 볼 수 있어, 시퀀스를 통해 연속적으로 이동하는 슬라이딩 윈도우를 생성합니다. 토큰 15가 위치 8~15에 어텐션을 줄 수 있는 반면, 토큰 10은 위치 3~10에 어텐션을 준다는 점에 주목하세요. 윈도우가 앞으로 슬라이딩하여 청킹의 인위적인 장벽 없이 전체 시퀀스에 걸쳐 로컬 컨텍스트를 유지합니다. Gemma 3는 하이브리드 위치 인코딩 접근 방식이 다른 전략을 혼합하는 것과 유사하게, 교대 레이어에서 SWA와 전체 어텐션을 결합합니다.
+슬라이딩 윈도우 어텐션(SWA, Sliding Window Attention)은 Mistral 7B([Child et al., 2019](https://huggingfacetb-smol-training-playbook.hf.space/#bib-child2019generating); [Jiang et al., 2023](https://arxiv.org/abs/2310.06825))에 의해 대중화되었으며, 최근 토큰이 가장 관련성이 높다는 직관을 기반으로 다른 접근 방식을 취합니다. 딱딱한 청크 경계 대신, 각 토큰은 가장 최근 N개 토큰에만 어텐션을 줍니다. 다이어그램에서 모든 토큰은 최대 8개 위치 뒤까지 볼 수 있어, 시퀀스를 통해 연속적으로 이동하는 슬라이딩 윈도우를 생성합니다. 토큰 15가 위치 8-15에 어텐션을 줄 수 있는 반면, 토큰 10은 위치 3-10에 어텐션을 준다는 점에 주목하세요. 윈도우가 앞으로 슬라이딩하여 청킹의 인위적인 장벽 없이 전체 시퀀스에 걸쳐 로컬 컨텍스트를 유지합니다. Gemma 3는 하이브리드 위치 인코딩 접근 방식이 다른 전략을 혼합하는 것과 유사하게, 교대 레이어에서 SWA와 전체 어텐션을 결합합니다.
 
-**듀얼 청크 어텐션(DCA, Dual Chunk Attention)**([An et al., 2024](https://arxiv.org/abs/2402.17463))은 청크 간 정보 흐름을 유지하면서 청크 어텐션을 확장하는 학습이 필요 없는 방법입니다. 우리 예시에서는 청크 크기 s=4를 사용하여 16개 토큰을 4개 청크로 나눕니다(대각선을 따라 4×4 정사각형을 시각화하세요). DCA는 세 가지 메커니즘을 결합합니다. (1) 토큰이 청크 내에서 정상적으로 어텐션을 주는 **청크 내 어텐션**(대각선 패턴). (2) 쿼리가 위치 인덱스 c-1=7을 사용하여 이전 청크에 어텐션을 주어 7로 제한된 상대 위치를 생성하는 **청크 간 어텐션**. (3) 이웃 청크 간의 지역성을 보존하는 로컬 윈도우 w=3을 가진 **연속 청크 어텐션**. 이는 청크 경계에서 부드러운 전환을 유지하면서 모든 상대 위치를 학습 분포(0~7) 내에 유지합니다. DCA는 Qwen2.5와 같은 모델이 백만 토큰 시퀀스에 대한 지속적 학습 없이도 추론 시 최대 100만 토큰의 초장문 컨텍스트 윈도우를 지원할 수 있게 합니다.
+**듀얼 청크 어텐션(DCA, Dual Chunk Attention)**([An et al., 2024](https://arxiv.org/abs/2402.17463))은 청크 간 정보 흐름을 유지하면서 청크 어텐션을 확장하는 학습이 필요 없는 방법입니다. 우리 예시에서는 청크 크기 s=4를 사용하여 16개 토큰을 4개 청크로 나눕니다(대각선을 따라 4×4 정사각형을 시각화하세요). DCA는 세 가지 메커니즘을 결합합니다. (1) 토큰이 청크 내에서 정상적으로 어텐션을 주는 **청크 내 어텐션**(대각선 패턴). (2) 쿼리가 위치 인덱스 c-1=7을 사용하여 이전 청크에 어텐션을 주어 7로 제한된 상대 위치를 생성하는 **청크 간 어텐션**. (3) 이웃 청크 간의 지역성을 보존하는 로컬 윈도우 w=3을 가진 **연속 청크 어텐션**. 이는 청크 경계에서 부드러운 전환을 유지하면서 모든 상대 위치를 학습 분포(0-7) 내에 유지합니다. DCA는 Qwen2.5와 같은 모델이 백만 토큰 시퀀스에 대한 지속적 학습 없이도 추론 시 최대 100만 토큰의 초장문 컨텍스트 윈도우를 지원할 수 있게 합니다.
 
 > 📊**어텐션 싱크(Attention Sinks)**
 > 
@@ -1207,9 +1232,19 @@ $$S_t = S_{t-1} + k_t v_t^\top$$
 
 $$o_t = S_t q_t = S_{t-1} q_t + v_t (k_t^\top q_t)$$
 
-재정렬이 왜 중요한지: 왼쪽 형태 $\sum_{j \leq t} (q_t^\top k_j) v_j$는 "각 과거 토큰 j에 대해, 내적 $q_t^\top k_j$(스칼라)를 계산하고, 이를 사용하여 $v_j$를 스케일링하고, 그 t개 벡터를 더함"을 의미합니다. 이는 스텝 t에서 약 $O(td)$ 작업입니다. 오른쪽 형태는 이를 $(\sum_{j \leq t} v_j k_j^\top) q_t$로 다시 씁니다. 모든 과거 $(k_j, v_j)$를 이미 요약하는 단일 누적 상태 행렬 $S_t = \sum_{j \leq t} v_j k_j^\top \in \mathbb{R}^{d \times d}$를 유지합니다. 각 새 토큰은 하나의 외적 $v_t k_t^\top$으로 업데이트하며 비용은 $O(d^2)$이고, 출력은 단지 하나의 행렬-벡터 곱 $S_t q_t$(또 다른 $O(d^2)$)입니다. 따라서 왼쪽 형태로 처음부터 T개 토큰을 생성하는 것은 $O(T^2 d)$인 반면, $S_t$를 유지하고 오른쪽 형태를 사용하는 것은 $O(Td^2)$입니다. 직관적으로: 왼쪽 = "각 스텝마다 많은 작은 내적-스케일-더하기"; 오른쪽 = "미리 요약된 하나의 행렬 곱하기 쿼리", 시퀀스 길이에 대한 의존성을 차원에 대한 의존성으로 교환합니다. 여기서는 추론과 순환 형태에 집중하지만, 학습에서도 더 효율적이며, 재정렬은 다음 방정식처럼 간단합니다.
+재정렬이 왜 중요한지: 왼쪽 형태 $\sum_{j \leq t} (q_t^\top k_j) v_j$는 "각 과거 토큰 j에 대해, 내적 $q_t^\top k_j$(스칼라)를 계산하고, 이를 사용하여 $v_j$를 스케일링하고, 그 t개 벡터를 더함"을 의미합니다. 이는 스텝 t에서 약 $O(td)$ 작업입니다.
 
-$$\underbrace{(QK^\top)}_{n \times n} V = Q \underbrace{(K^\top V)}_{d \times d}$$
+오른쪽 형태는 이를 $(\sum_{j \leq t} v_j k_j^\top) q_t$로 다시 씁니다. 모든 과거 $(k_j, v_j)$를 이미 요약하는 단일 누적 상태 행렬 $S_t = \sum_{j \leq t} v_j k_j^\top \in \mathbb{R}^{d \times d}$를 유지합니다.
+
+각 새 토큰은 하나의 외적 $v_t k_t^\top$으로 업데이트하며 비용은 $O(d^2)$이고, 출력은 단지 하나의 행렬-벡터 곱 $S_t q_t$(또 다른 $O(d^2)$)입니다.
+
+따라서 왼쪽 형태로 처음부터 T개 토큰을 생성하는 것은 $O(T^2 d)$인 반면, $S_t$를 유지하고 오른쪽 형태를 사용하는 것은 $O(Td^2)$입니다.
+
+직관적으로: 왼쪽 = "각 스텝마다 많은 작은 내적-스케일-더하기"; 오른쪽 = "미리 요약된 하나의 행렬 곱하기 쿼리", 시퀀스 길이에 대한 의존성을 차원에 대한 의존성으로 교환합니다.
+
+여기서는 추론과 순환 형태에 집중하지만, 학습에서도 더 효율적이며, 재정렬은 다음 방정식처럼 간단합니다.
+
+$$\underbrace{(QK^\top)}\_{n \times n} V = Q \underbrace{(K^\top V)}\_{d \times d}$$
 
 이제 이것이 RNN과 같은 구조와 매우 유사해 보임을 알 수 있습니다. 문제가 해결되었죠? 거의요. 실제로 소프트맥스는 중요한 안정화 역할을 하며, 순진한 선형 형태는 어떤 정규화 없이는 불안정할 수 있습니다. 이것이 lightning 또는 norm attention이라는 실용적인 변형을 동기 부여합니다!
 
@@ -1364,7 +1399,7 @@ BPE(Byte-Pair Encoding)([Sennrich et al., 2016](https://arxiv.org/abs/1508.07909
 
 다산성을 측정하는 표준 접근 방식은 단어 대 토큰 비율(단어 다산성)을 계산하는 것으로, 평균적으로 단어당 몇 개의 토큰이 필요한지 측정합니다. 이 메트릭은 적절한 단어 토크나이저가 사용 가능할 때(예: [Spacy](https://spacy.io/) 와 [Stanza](https://stanfordnlp.github.io/stanza)  ([Penedo et al., 2025](https://arxiv.org/abs/2506.20920))) 의미 있는 교차 언어 비교를 제공하기 때문에 단어 개념을 중심으로 정의됩니다.
 
-단일 언어에 대해 토크나이저를 비교할 때, 문자 대 토큰 비율이나 바이트 대 토큰 비율([Dagan et al., 2024](https://arxiv.org/abs/2402.01035))을 얻기 위해 단어 대신 문자 수나 바이트 수를 사용할 수도 있습니다. 그러나 이러한 메트릭은 교차 언어 비교에 한계가 있습니다. 바이트는 다른 스크립트의 문자가 다른 바이트 표현을 필요로 하기 때문에 왜곡될 수 있습니다(예: 중국어 문자는 UTF-8에서 3바이트를 사용하는 반면 라틴 문자는 1~2바이트를 사용). 마찬가지로 문자 수를 사용하는 것은 언어에 따라 단어 길이가 극적으로 다르다는 사실을 고려하지 않습니다. 예를 들어, 중국어 단어는 독일어 복합어보다 훨씬 짧은 경향이 있습니다.
+단일 언어에 대해 토크나이저를 비교할 때, 문자 대 토큰 비율이나 바이트 대 토큰 비율([Dagan et al., 2024](https://arxiv.org/abs/2402.01035))을 얻기 위해 단어 대신 문자 수나 바이트 수를 사용할 수도 있습니다. 그러나 이러한 메트릭은 교차 언어 비교에 한계가 있습니다. 바이트는 다른 스크립트의 문자가 다른 바이트 표현을 필요로 하기 때문에 왜곡될 수 있습니다(예: 중국어 문자는 UTF-8에서 3바이트를 사용하는 반면 라틴 문자는 1-2바이트를 사용). 마찬가지로 문자 수를 사용하는 것은 언어에 따라 단어 길이가 극적으로 다르다는 사실을 고려하지 않습니다. 예를 들어, 중국어 단어는 독일어 복합어보다 훨씬 짧은 경향이 있습니다.
 
 **연속 단어 비율(Proportion of continued words)**
 
@@ -1757,15 +1792,17 @@ SmolLM3의 경우, WSD 스케줄을 사용하여 AdamW로 100B 토큰에서 3B �
 
 **B개 샘플에 대한 평균**
 
-배치 그래디언트: $\tilde{g}_B = \frac{1}{B} \sum_{i=1}^{B} \tilde{g}^{(i)}$
+배치 그래디언트:
 
-평균은 동일하게 유지: $E[\tilde{g}_B] = g$
+$$\widetilde{g}\_B = \frac{1}{B} \sum\_{i=1}^{B} \widetilde{g}^{(i)}$$
 
-그러나 공분산은 축소: $\text{Cov}(\tilde{g}_B) = \frac{\Sigma}{B}$
+평균은 동일하게 유지: $E[\widetilde{g}_B] = g$
+
+그러나 공분산은 축소: $\text{Cov}(\widetilde{g}_B) = \frac{\Sigma}{B}$
 
 SGD 파라미터 업데이트는:
 
-$$\Delta w = -\eta \tilde{g}_B$$
+$$\Delta w = -\eta \widetilde{g}_B$$
 
 이 업데이트의 분산은 다음에 비례합니다:
 
@@ -3252,11 +3289,6 @@ $$R_{\text{length}}(y) = \begin{cases} 0, & |y| \leq L_{max} - L_{cache} \\ \fra
 그러나 아마 깨달았듯이, 훌륭한 모델을 학습시키는 방법을 아는 것은 이야기의 절반에 불과합니다. 실제로 그 모델들에 생명을 불어넣으려면 올바른 인프라가 필요합니다. LLM 학습의 숨은 영웅으로 이 대작을 마무리합시다.
 
 
----
-
-아키텍처에 관련한 내용은 [다음 글](https://wikidocs.net/320302)에서 이어서 진행됩니다. 
-글이 너무 길에서 위키독스에서 처리를 하지 못해 부득히 분리하여 작성하였습니다. 
-
 # 인프라 - 숨은 영웅
 
 이제 모델 생성과 학습에 대해 우리가 아는 모든 것을 알았으니, 프로젝트(그리고 은행 계좌)를 성공시키거나 망칠 수 있는 중요하지만 과소평가된 구성 요소인 인프라를 다루겠습니다. 프레임워크, 아키텍처, 데이터 큐레이션에 집중하든, 인프라 기본을 이해하면 학습 병목 현상을 식별하고, 병렬성 전략을 최적화하고, 처리량 문제를 디버그하는 데 도움이 됩니다. (최소한, 인프라 팀과의 커뮤니케이션을 개선합니다 😉).
@@ -3304,7 +3336,7 @@ FLOPs를 논의할 때 정밀도가 중요합니다. Tensor 코어는 다른 정
 
 아래 표는 다양한 NVIDIA GPU 세대와 정밀도에 걸친 이론적 피크 성능을 보여줍니다:
 
-| 정밀도\GPU 유형 | A100 | H100 | H200 | B100 | B200 |
+| 정밀도/GPU 유형 | A100 | H100 | H200 | B100 | B200 |
 |---|---|---|---|---|---|
 | FP64 | 9.7 | 34 | 34 | 40 | 40 |
 | FP32 | 19.5 | 67 | 67 | 80 | 80 |
